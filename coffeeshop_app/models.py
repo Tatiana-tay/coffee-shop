@@ -4,6 +4,25 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 
+
+class Category(models.Model):
+    name = models.CharField(max_length=255)
+    def __str__(self):
+        return self.name
+
+
+class Size(models.Model):
+    name = models.CharField(max_length=255)
+    def __str__(self):
+        return self.name
+    
+
+class Ingredient(models.Model):
+    name = models.CharField(max_length=255)
+    def __str__(self):
+        return self.name
+
+
 class Item(models.Model):
     name = models.CharField(max_length=255)
     image = models.ImageField(upload_to='items/')
@@ -11,9 +30,9 @@ class Item(models.Model):
     avg_rating = models.FloatField(default=0)
     number_rating = models.IntegerField(default=0)
     total_rating = models.IntegerField(default=0)
-    ingredients = models.JSONField(default=list)
-    sizes = models.JSONField(default=list)
-    categories = models.JSONField(default=list)
+    ingredients = models.ManyToManyField(Ingredient, related_name='items', blank=True)
+    sizes = models.ManyToManyField(Size, related_name='items', blank=True)
+    categories = models.ManyToManyField(Category, related_name='items', blank=True)
     related_items = models.ManyToManyField('self', blank=True)
     description = models.TextField(blank=True)
     origin_story = models.TextField(blank=True)
@@ -52,6 +71,8 @@ class Barista(models.Model):
         return self.name
     
     
+
+    
 class Review(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="reviews")
     review_user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -73,6 +94,7 @@ class FAQ(models.Model):
     
 
 class Gallery(models.Model):
+    name = models.CharField(max_length=255)
     image = models.ImageField(upload_to='gallery/')
     def __str__(self):
         return str(self.image.name)
@@ -89,3 +111,23 @@ class MailCollector(models.Model):
     def __str__(self):
         return self.email
 
+
+class ContactUs(models.Model):
+    name = models.CharField(max_length=255)
+    phone = models.CharField(max_length=20)
+    email = models.EmailField()
+    map_url = models.URLField(max_length=500, blank=True)
+    title = models.CharField(max_length=255)
+    description = models.CharField(max_length=255)
+    
+    def __str__(self):
+        return self.name
+
+
+class About(models.Model):
+    our_story = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='about/')
+    coffee_journy = models.JSONField(default=list)
+    
+    def __str__(self):
+        return self.our_story

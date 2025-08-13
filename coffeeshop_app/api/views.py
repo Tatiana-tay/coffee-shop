@@ -8,22 +8,42 @@ from rest_framework import generics, status
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 #import django_filters.rest_framework
-from coffeeshop_app.api.filters import ItemFilter
-from coffeeshop_app.models import (Item, Barista, Farm, FAQ, Review)
-from coffeeshop_app.api.serializers import (ItemSerializer, BaristaSerializer, 
-                                            FarmSerializer, FAQSerializer, ReviewSerializer)
+from coffeeshop_app.api.filters import PriceCategoryFilter
+from coffeeshop_app.models import (Item, Barista, Farm, FAQ, Review, Category, Size, Ingredient, ContactUs, About)
+from coffeeshop_app.api.serializers import (ItemSerializer, ListItemSerializer, BaristaSerializer, 
+                                            FarmSerializer, FAQSerializer, ReviewSerializer, 
+                                            CategorySerializer, SizeSerializer, IngredientSerializer,
+                                            ContactUsSerializer, AboutSerializer)
 
 
 class ItemVS(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_class = ItemFilter
-    filterset_fields = ['category', 'avg_rating']
+    filterset_class = PriceCategoryFilter
     search_fields = ['name']
     ordering_fields = ['avg_rating', 'price']
     
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ListItemSerializer
+        return ItemSerializer
+    
 
+class CategoryVS(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    
+    
+class SizeVS(viewsets.ModelViewSet):
+    queryset = Size.objects.all()
+    serializer_class = SizeSerializer
+  
+    
+class IngredientVS(viewsets.ModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    
 
 class BaristaVS(viewsets.ModelViewSet):
     queryset = Barista.objects.all()
@@ -44,7 +64,16 @@ class FarmVS(viewsets.ModelViewSet):
 class FAQVS(viewsets.ModelViewSet):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
+
+
+class ContactUsVS(viewsets.ModelViewSet):
+    queryset = ContactUs.objects.all()
+    serializer_class = ContactUsSerializer
     
+    
+class AboutVS(viewsets.ModelViewSet):
+    queryset = About.objects.all()
+    serializer_class = AboutSerializer
 
 
 class ReviewCreate(generics.CreateAPIView):
