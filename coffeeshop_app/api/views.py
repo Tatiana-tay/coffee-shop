@@ -9,11 +9,11 @@ from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 #import django_filters.rest_framework
 from coffeeshop_app.api.filters import PriceCategoryFilter
-from coffeeshop_app.models import (Item, Barista, Farm, FAQ, Review, Category, Size, Ingredient, ContactUs, About)
+from coffeeshop_app.models import (Item, Barista, Farm, FAQ, Review, Category, Size, Ingredient, ContactUs, About, MailCollector)
 from coffeeshop_app.api.serializers import (ItemSerializer, ListItemSerializer, BaristaSerializer, 
                                             FarmSerializer, FAQSerializer, ReviewSerializer, 
                                             CategorySerializer, SizeSerializer, IngredientSerializer,
-                                            ContactUsSerializer, AboutSerializer)
+                                            ContactUsSerializer, AboutSerializer, MailCollectorSerializer)
 
 
 class ItemVS(viewsets.ModelViewSet):
@@ -74,6 +74,10 @@ class ContactUsVS(viewsets.ModelViewSet):
 class AboutVS(viewsets.ModelViewSet):
     queryset = About.objects.all()
     serializer_class = AboutSerializer
+    
+class MailCollectorVS(viewsets.ModelViewSet):
+    queryset = MailCollector.objects.all()
+    serializer_class = MailCollectorSerializer
 
 
 class ReviewCreate(generics.CreateAPIView):

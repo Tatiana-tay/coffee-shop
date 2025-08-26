@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from coffeeshop_app.models import (Item, Farm, Barista, Review, FAQ,
                                    Gallery, Category, Size, Ingredient,
-                                   ContactUs, About)
+                                   ContactUs, About, MailCollector)
 
 class ReviewSerializer(serializers.ModelSerializer):
     review_user = serializers.StringRelatedField(read_only=True)
@@ -110,4 +110,10 @@ class ContactUsSerializer(serializers.ModelSerializer):
 class AboutSerializer(serializers.ModelSerializer):
     class Meta:
         model = About
+        fields = '__all__'
+        
+        
+class MailCollectorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MailCollector
         fields = '__all__'

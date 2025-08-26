@@ -1,7 +1,7 @@
 from django.contrib import admin
 from coffeeshop_app.models import (Barista, FAQ, Farm, Gallery, Item , Review, 
                                    Category, Size, Ingredient,
-                                   ContactUs, About)
+                                   ContactUs, About, MailCollector)
 # Register your models here.
 
 admin.site.register(Barista)
@@ -15,3 +15,4 @@ admin.site.register(Size)
 admin.site.register(Ingredient)
 admin.site.register(ContactUs)
 admin.site.register(About)
+admin.site.register(MailCollector)

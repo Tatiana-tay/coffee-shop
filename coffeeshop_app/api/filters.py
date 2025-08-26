@@ -7,7 +7,8 @@ class PriceCategoryFilter(filters.FilterSet):
     categories = filters.ModelMultipleChoiceFilter(
         field_name='categories__id',
         to_field_name='id',
-        queryset=Category.objects.all()
+        queryset=Category.objects.all(),
+        conjoined=True
     )
 
     class Meta:
