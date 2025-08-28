@@ -81,12 +81,22 @@ class FarmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Farm
         fields = '__all__'
+        
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
 
 class BaristaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Barista
         fields = '__all__'
+        
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
 
 class FAQSerializer(serializers.ModelSerializer):
@@ -99,6 +109,11 @@ class GallerySerializer(serializers.ModelSerializer):
     class Meta:
         model = Gallery
         fields = '__all__'
+        
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
 
 class ContactUsSerializer(serializers.ModelSerializer):
@@ -111,6 +126,11 @@ class AboutSerializer(serializers.ModelSerializer):
     class Meta:
         model = About
         fields = '__all__'
+        
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
         
         
 class MailCollectorSerializer(serializers.ModelSerializer):
