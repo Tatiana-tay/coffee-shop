@@ -72,10 +72,22 @@ class ContactUsVS(viewsets.ModelViewSet):
     queryset = ContactUs.objects.all()
     serializer_class = ContactUsSerializer
     
+    def list(self, request, *args, **kwargs):
+        return Response(status=405)  # Method Not Allowed
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(status=405)  # Method Not Allowed
+    
     
 class AboutVS(viewsets.ModelViewSet):
     queryset = About.objects.all()
     serializer_class = AboutSerializer
+    
+    def list(self, request, *args, **kwargs):
+        return Response(status=405)  # Method Not Allowed
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(status=405)  # Method Not Allowed
     
     
 class MailCollectorVS(viewsets.ModelViewSet):

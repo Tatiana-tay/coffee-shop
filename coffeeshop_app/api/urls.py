@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from coffeeshop_app.api.views import (ItemVS, BaristaVS, FarmVS, FAQVS,
                                       ReviewCreate, ReviewList, ReviewDetail,
-                                      ContactUsVS, AboutVS, CategoryVS, SizeVS, IngredientVS, MailCollectorVS)
+                                      ContactUsVS, AboutVS, CategoryVS, SizeVS,
+                                      IngredientVS, MailCollectorVS, GalleryVS)
 
 
 router = DefaultRouter()
@@ -16,6 +17,7 @@ router.register('faq', FAQVS, basename='faq-vs')
 router.register('contactus', ContactUsVS, basename='contactus-vs')
 router.register('about', AboutVS, basename='about-vs')
 router.register('mailcollector', MailCollectorVS, basename='mailcollector-vs')
+router.register('gallery', GalleryVS, basename='gallery-vs')
 
 urlpatterns = [
     path('', include(router.urls)),

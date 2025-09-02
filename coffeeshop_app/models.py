@@ -51,11 +51,19 @@ class Farm(models.Model):
     map_url = models.URLField(max_length=500, blank=True)
     ground_info_img = models.ImageField(upload_to='farms/ground/')
     description = models.TextField(blank=True)
-    info_arr = models.JSONField(default=list)  # Stores array of {text, image}
+    # info_arr = models.JSONField(default=list)
 
     def __str__(self):
         return self.name
+
     
+class FarmInfo(models.Model):
+    farm = models.ForeignKey(Farm, related_name="info_arr", on_delete=models.CASCADE)
+    text = models.TextField()
+    image = models.ImageField(upload_to="farm_info/", blank=True, null=True)
+    
+    def __str__(self):
+        return self.farm
     
     
 class Barista(models.Model):
@@ -64,13 +72,20 @@ class Barista(models.Model):
     age = models.PositiveIntegerField(validators=[MinValueValidator(15)])
     position = models.CharField(max_length=255)
     experience_years = models.PositiveIntegerField()
-    nationality = models.JSONField(default=list) 
+    # nationality = models.JSONField(default=list) 
     description = models.TextField(blank=True)
     
     def __str__(self):
         return self.name
     
-    
+
+class Nationality(models.Model):
+    barista = models.ForeignKey(Barista, related_name="nationalities", on_delete=models.CASCADE)
+    code = models.CharField(max_length=10)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
 
     
 class Review(models.Model):

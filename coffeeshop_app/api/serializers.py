@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from coffeeshop_app.models import (Item, Farm, Barista, Review, FAQ,
+from coffeeshop_app.models import (Item, Farm, FarmInfo, Barista, Review, FAQ,
                                    Gallery, Category, Size, Ingredient,
-                                   ContactUs, About, MailCollector)
+                                   ContactUs, About, MailCollector, Nationality)
 
 class ReviewSerializer(serializers.ModelSerializer):
     review_user = serializers.StringRelatedField(read_only=True)
@@ -77,7 +77,24 @@ class ItemSerializer(serializers.ModelSerializer):
         return None
 
 
+class FarmInfoSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)        # used to find existing rows
+    _delete = serializers.BooleanField(required=False)   # custom flag for deletes
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FarmInfo
+        fields = '__all__'
+        
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
+    
+
 class FarmSerializer(serializers.ModelSerializer):
+    info_arr = FarmInfoSerializer(many=True, read_only=True)
+    image = serializers.SerializerMethodField()
     class Meta:
         model = Farm
         fields = '__all__'
@@ -86,9 +103,93 @@ class FarmSerializer(serializers.ModelSerializer):
         if obj.image:
             return obj.image.url
         return None
+    
+    
+    def create(self, validated_data):
+        info_arr_data = validated_data.pop("info_arr", [])
+        farm = Farm.objects.create(**validated_data)
+
+        for item in info_arr_data:
+            FarmInfo.objects.create(farm=farm, **{k: v for k, v in item.items() if k != "_delete"})
+        return farm
+
+    def update(self, instance, validated_data):
+        info_arr_data = validated_data.pop("info_arr", None)
+
+        # update farm fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if info_arr_data is not None:
+            for item in info_arr_data:
+                if "id" in item:
+                    try:
+                        info_obj = FarmInfo.objects.get(id=item["id"], farm=instance)
+                    except FarmInfo.DoesNotExist:
+                        continue
+
+                    # check delete flag
+                    if item.get("_delete", False):
+                        info_obj.delete()
+                        continue
+
+                    # update fields
+                    info_obj.text = item.get("text", info_obj.text)
+                    if "image" in item:
+                        info_obj.image = item["image"]
+                    info_obj.save()
+                else:
+                    # create new
+                    FarmInfo.objects.create(farm=instance, **{k: v for k, v in item.items() if k != "_delete"})
+
+        return instance
+
+
+
+class NationalitySerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = Nationality
+        fields = '__all__'
+        
+    
+    def create(self, validated_data):
+        nationalities_data = validated_data.pop("nationalities", [])
+        barista = Barista.objects.create(**validated_data)
+        for nat in nationalities_data:
+            Nationality.objects.create(barista=barista, **nat)
+        return barista
+
+    def update(self, instance, validated_data):
+        nationalities_data = validated_data.pop("nationalities", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if nationalities_data is not None:
+            existing_ids = [item["id"] for item in nationalities_data if "id" in item]
+            instance.nationalities.exclude(id__in=existing_ids).delete()
+
+            for item in nationalities_data:
+                if "id" in item:
+                    nat = Nationality.objects.get(id=item["id"], barista=instance)
+                    nat.code = item.get("code", nat.code)
+                    nat.name = item.get("name", nat.name)
+                    nat.save()
+                else:
+                    Nationality.objects.create(barista=instance, **item)
+
+        return instance
+
 
 
 class BaristaSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+    nationalities = NationalitySerializer(many=True)
+    
     class Meta:
         model = Barista
         fields = '__all__'
@@ -99,6 +200,7 @@ class BaristaSerializer(serializers.ModelSerializer):
         return None
 
 
+
 class FAQSerializer(serializers.ModelSerializer):
     class Meta:
         model = FAQ
@@ -106,6 +208,7 @@ class FAQSerializer(serializers.ModelSerializer):
 
 
 class GallerySerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
     class Meta:
         model = Gallery
         fields = '__all__'
@@ -126,11 +229,7 @@ class AboutSerializer(serializers.ModelSerializer):
     class Meta:
         model = About
         fields = '__all__'
-        
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+
         
         
 class MailCollectorSerializer(serializers.ModelSerializer):
