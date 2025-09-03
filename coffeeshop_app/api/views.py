@@ -1,11 +1,14 @@
+import datetime
+import random
 from django.shortcuts import get_object_or_404
 from rest_framework.serializers import Serializer, ModelSerializer
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.response import Response
 #from rest_framework.views import APIView
 from rest_framework import generics, status
 # from rest_framework import mixins
 from rest_framework import viewsets, filters
+from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
 #import django_filters.rest_framework
@@ -81,16 +84,57 @@ class ContactUsVS(viewsets.ModelViewSet):
         return Response(status=405)  # Method Not Allowed
     
     
-class AboutVS(viewsets.ModelViewSet):
-    queryset = About.objects.all()
+# class AboutVS(viewsets.ModelViewSet):
+#     queryset = About.objects.all()
+#     serializer_class = AboutSerializer
+#     parser_classes = (MultiPartParser, FormParser)
+    
+#     def list(self, request, *args, **kwargs):
+#         return Response(status=405)  # Method Not Allowed
+
+#     def destroy(self, request, *args, **kwargs):
+#         return Response(status=405)  # Method Not Allowed
+
+
+
+class AboutView(APIView):
     serializer_class = AboutSerializer
     parser_classes = (MultiPartParser, FormParser)
-    
-    def list(self, request, *args, **kwargs):
-        return Response(status=405)  # Method Not Allowed
 
-    def destroy(self, request, *args, **kwargs):
-        return Response(status=405)  # Method Not Allowed
+    def get_object(self):
+        try:
+            return About.objects.get()
+        except About.DoesNotExist:
+            raise NotFound("No About object found.")
+
+    def get(self, request):
+        about_instance = self.get_object()
+        serializer = self.serializer_class(about_instance)
+        return Response(serializer.data)
+
+    def put(self, request):
+        about_instance = self.get_object()
+        serializer = self.serializer_class(about_instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def post(self, request):
+        if About.objects.exists():
+            return Response({"message": "An About object already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request):
+        try:
+            about_instance = self.get_object()
+            about_instance.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except NotFound:
+            return Response({"message": "No About object to delete."}, status=status.HTTP_404_NOT_FOUND)
     
     
 class MailCollectorVS(viewsets.ModelViewSet):
@@ -147,3 +191,46 @@ class ReviewList(generics.ListAPIView):
 class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    
+    
+    
+    
+    
+class TodaysPickView(APIView):
+    def get(self, request):
+        category_ids = list(Category.objects.values_list("id", flat=True))
+        if not category_ids:
+            return Response({"message": "No categories found."}, status=404)
+
+        today = datetime.date.today()
+        day_of_year = today.timetuple().tm_yday
+        year = today.year
+
+        # 1. Deterministically shuffle categories for this year
+        rng = random.Random(year)
+        shuffled_ids = category_ids[:]
+        rng.shuffle(shuffled_ids)
+
+        # 2. Pick today's category
+        todays_index = (day_of_year - 1) % len(shuffled_ids)
+        todays_category_id = shuffled_ids[todays_index]
+
+        try:
+            todays_category = Category.objects.get(id=todays_category_id)
+        except Category.DoesNotExist:
+            return Response({"message": "Category not found."}, status=404)
+
+        # 3. Deterministically pick an item from this category
+        items = list(Item.objects.filter(categories=todays_category))
+        if not items:
+            return Response(
+                {"message": f"No items found in category '{todays_category.name}'."},
+                status=404,
+            )
+
+        rng = random.Random(day_of_year + todays_category_id)  # stable per day
+        todays_pick = rng.choice(items)
+
+        # 4. Serialize result
+        serializer = ItemSerializer(todays_pick, context={"request": request})
+        return Response(serializer.data)

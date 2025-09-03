@@ -80,7 +80,7 @@ class Barista(models.Model):
     
 
 class Nationality(models.Model):
-    barista = models.ForeignKey(Barista, related_name="nationalities", on_delete=models.CASCADE)
+    barista = models.ForeignKey(Barista, related_name="nationality", on_delete=models.CASCADE)
     code = models.CharField(max_length=10)
     name = models.CharField(max_length=100)
 
@@ -151,7 +151,7 @@ class About(models.Model):
     
 class CoffeeJourney(models.Model):
     about = models.ForeignKey(About, related_name="coffee_journey", on_delete=models.CASCADE)
-    title = models.ImageField(upload_to="coffee_journey/")
+    title = models.TextField()
     description = models.TextField()
 
     def __str__(self):

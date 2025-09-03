@@ -63,14 +63,30 @@ class ListItemSerializer(serializers.ModelSerializer):
 class ItemSerializer(serializers.ModelSerializer):
     # image = serializers.SerializerMethodField()
     reviews = ReviewSerializer(many=True, read_only=True)
-    categories = CategorySerializer(many=True, read_only=True)
-    sizes = SizeSerializer(many=True, read_only=True)
-    ingredients = IngredientSerializer(many=True, read_only=True)
-    related_items = SimpleItemSerializer(many=True, read_only=True)
+    categories = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), many=True)
+    sizes = serializers.PrimaryKeyRelatedField(queryset=Size.objects.all(), many=True)
+    ingredients = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), many=True)
+    related_items = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all(), many=True, required=False)
+
     
     class Meta:
         model = Item
-        fields = '__all__'
+        fields = [
+            "id",
+            "name",
+            "image",
+            "price",
+            "avg_rating",
+            "number_rating",
+            "total_rating",
+            "description",
+            "origin_story",
+            "reviews",
+            "categories",
+            "sizes",
+            "ingredients",
+            "related_items",
+        ]
         
     # def get_image(self, obj):
     #     if obj.image:
@@ -151,12 +167,12 @@ class ItemSerializer(serializers.ModelSerializer):
 class FarmInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmInfo
-        fields = ["id", "text", "image"]
+        fields = ["text", "image"]
 
 
 class FarmSerializer(serializers.ModelSerializer):
-    info_arr = FarmInfoSerializer(many=True, write_only=True)  # nested input
-    farm_info_list = FarmInfoSerializer(source="info_arr", many=True, read_only=True)  # output
+    info_arr = FarmInfoSerializer(many=True)  # nested input
+    # farm_info_list = FarmInfoSerializer(source="info_arr", many=True, read_only=True)  # output
 
     class Meta:
         model = Farm
@@ -172,7 +188,7 @@ class FarmSerializer(serializers.ModelSerializer):
             "ground_info_img",
             "description",
             "info_arr",         # for creating
-            "farm_info_list",   # for reading
+            # "farm_info_list",   # for reading
         ]
 
     def create(self, validated_data):
@@ -203,56 +219,42 @@ class FarmSerializer(serializers.ModelSerializer):
 
 
 class NationalitySerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)
-
     class Meta:
         model = Nationality
-        fields = '__all__'
-        
-    
+        fields = ["code", "name"]
+
+class BaristaSerializer(serializers.ModelSerializer):
+    nationality = NationalitySerializer(many=True)
+
+    class Meta:
+        model = Barista
+        fields = [
+            "id", "name", "image", "age", "position", "experience_years",
+            "description", "nationality",
+        ]
+
     def create(self, validated_data):
-        nationalities_data = validated_data.pop("nationalities", [])
+        nationality_data = validated_data.pop("nationality", [])
         barista = Barista.objects.create(**validated_data)
-        for nat in nationalities_data:
-            Nationality.objects.create(barista=barista, **nat)
+        for nationality in nationality_data:
+            Nationality.objects.create(barista=barista, **nationality)
         return barista
 
     def update(self, instance, validated_data):
-        nationalities_data = validated_data.pop("nationalities", None)
-
+        nationality_data = validated_data.pop("nationality", None)
+        
+        # Update Barista instance
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if nationalities_data is not None:
-            existing_ids = [item["id"] for item in nationalities_data if "id" in item]
-            instance.nationalities.exclude(id__in=existing_ids).delete()
-
-            for item in nationalities_data:
-                if "id" in item:
-                    nat = Nationality.objects.get(id=item["id"], barista=instance)
-                    nat.code = item.get("code", nat.code)
-                    nat.name = item.get("name", nat.name)
-                    nat.save()
-                else:
-                    Nationality.objects.create(barista=instance, **item)
+        # Update or replace Nationality instances
+        if nationality_data is not None:
+            instance.nationality.all().delete()
+            for nationality in nationality_data:
+                Nationality.objects.create(barista=instance, **nationality)
 
         return instance
-
-
-
-class BaristaSerializer(serializers.ModelSerializer):
-    # image = serializers.SerializerMethodField()
-    nationalities = NationalitySerializer(many=True)
-    
-    class Meta:
-        model = Barista
-        fields = '__all__'
-        
-    # def get_image(self, obj):
-    #     if obj.image:
-    #         return obj.image.url
-    #     return None
 
 
 
@@ -285,16 +287,17 @@ class CoffeeJourneySerializer(serializers.ModelSerializer):
         model = CoffeeJourney
         fields = ["title", "description"]
 
-
 class AboutSerializer(serializers.ModelSerializer):
     coffee_journey = CoffeeJourneySerializer(many=True)
 
     class Meta:
         model = About
-        fields = ["our_story", "image", "coffee_journey"]
+        fields = [
+            "id", "our_story", "image", "coffee_journey",
+        ]
 
     def create(self, validated_data):
-        journey_data = validated_data.pop("coffee_journey")
+        journey_data = validated_data.pop("coffee_journey", [])
         about = About.objects.create(**validated_data)
         for journey in journey_data:
             CoffeeJourney.objects.create(about=about, **journey)
@@ -302,14 +305,14 @@ class AboutSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         journey_data = validated_data.pop("coffee_journey", None)
-
-        # update About fields
-        instance.our_story = validated_data.get("our_story", instance.our_story)
-        instance.image = validated_data.get("image", instance.image)
+        
+        # Update About instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
 
+        # Update or replace CoffeeJourney instances
         if journey_data is not None:
-            # clear old journeys and replace with new
             instance.coffee_journey.all().delete()
             for journey in journey_data:
                 CoffeeJourney.objects.create(about=instance, **journey)
