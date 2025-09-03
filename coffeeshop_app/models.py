@@ -151,7 +151,7 @@ class About(models.Model):
     
 class CoffeeJourney(models.Model):
     about = models.ForeignKey(About, related_name="coffee_journey", on_delete=models.CASCADE)
-    photo = models.ImageField(upload_to="coffee_journey/")
+    title = models.ImageField(upload_to="coffee_journey/")
     description = models.TextField()
 
     def __str__(self):

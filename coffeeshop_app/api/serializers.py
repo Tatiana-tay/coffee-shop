@@ -78,71 +78,125 @@ class ItemSerializer(serializers.ModelSerializer):
     #     return None
 
 
-class FarmInfoSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=False)        # used to find existing rows
-    _delete = serializers.BooleanField(required=False)   # custom flag for deletes
-    # image = serializers.SerializerMethodField()
+# class FarmInfoSerializer(serializers.ModelSerializer):
+#     id = serializers.IntegerField(required=False)        # used to find existing rows
+#     _delete = serializers.BooleanField(required=False)   # custom flag for deletes
+#     # image = serializers.SerializerMethodField()
 
+#     class Meta:
+#         model = FarmInfo
+#         fields = '__all__'
+        
+#     # def get_image(self, obj):
+#     #     if obj.image:
+#     #         return obj.image.url
+#     #     return None
+    
+
+# class FarmSerializer(serializers.ModelSerializer):
+#     info_arr = FarmInfoSerializer(many=True)
+#     # image = serializers.SerializerMethodField()
+#     class Meta:
+#         model = Farm
+#         fields = '__all__'
+        
+#     # def get_image(self, obj):
+#     #     if obj.image:
+#     #         return obj.image.url
+#     #     return None
+    
+    
+#     def create(self, validated_data):
+#         info_arr_data = validated_data.pop("info_arr", [])
+#         farm = Farm.objects.create(**validated_data)
+
+#         for item in info_arr_data:
+#             FarmInfo.objects.create(farm=farm, **{k: v for k, v in item.items() if k != "_delete"})
+#         return farm
+
+#     def update(self, instance, validated_data):
+#         info_arr_data = validated_data.pop("info_arr", None)
+
+#         # update farm fields
+#         for attr, value in validated_data.items():
+#             setattr(instance, attr, value)
+#         instance.save()
+
+#         if info_arr_data is not None:
+#             for item in info_arr_data:
+#                 if "id" in item:
+#                     try:
+#                         info_obj = FarmInfo.objects.get(id=item["id"], farm=instance)
+#                     except FarmInfo.DoesNotExist:
+#                         continue
+
+#                     # check delete flag
+#                     if item.get("_delete", False):
+#                         info_obj.delete()
+#                         continue
+
+#                     # update fields
+#                     info_obj.text = item.get("text", info_obj.text)
+#                     if "image" in item:
+#                         info_obj.image = item["image"]
+#                     info_obj.save()
+#                 else:
+#                     # create new
+#                     FarmInfo.objects.create(farm=instance, **{k: v for k, v in item.items() if k != "_delete"})
+
+#         return instance
+
+
+
+class FarmInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmInfo
-        fields = '__all__'
-        
-    # def get_image(self, obj):
-    #     if obj.image:
-    #         return obj.image.url
-    #     return None
-    
+        fields = ["id", "text", "image"]
+
 
 class FarmSerializer(serializers.ModelSerializer):
-    info_arr = FarmInfoSerializer(many=True)
-    # image = serializers.SerializerMethodField()
+    info_arr = FarmInfoSerializer(many=True, write_only=True)  # nested input
+    farm_info_list = FarmInfoSerializer(source="info_arr", many=True, read_only=True)  # output
+
     class Meta:
         model = Farm
-        fields = '__all__'
-        
-    # def get_image(self, obj):
-    #     if obj.image:
-    #         return obj.image.url
-    #     return None
-    
-    
+        fields = [
+            "id",
+            "name",
+            "image",
+            "area",
+            "height",
+            "temperature",
+            "region",
+            "map_url",
+            "ground_info_img",
+            "description",
+            "info_arr",         # for creating
+            "farm_info_list",   # for reading
+        ]
+
     def create(self, validated_data):
-        info_arr_data = validated_data.pop("info_arr", [])
+        info_data = validated_data.pop("info_arr", [])
         farm = Farm.objects.create(**validated_data)
 
-        for item in info_arr_data:
-            FarmInfo.objects.create(farm=farm, **{k: v for k, v in item.items() if k != "_delete"})
+        for info in info_data:
+            FarmInfo.objects.create(farm=farm, **info)
+
         return farm
 
     def update(self, instance, validated_data):
-        info_arr_data = validated_data.pop("info_arr", None)
+        info_data = validated_data.pop("info_arr", None)
 
-        # update farm fields
+        # Update farm itself
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if info_arr_data is not None:
-            for item in info_arr_data:
-                if "id" in item:
-                    try:
-                        info_obj = FarmInfo.objects.get(id=item["id"], farm=instance)
-                    except FarmInfo.DoesNotExist:
-                        continue
-
-                    # check delete flag
-                    if item.get("_delete", False):
-                        info_obj.delete()
-                        continue
-
-                    # update fields
-                    info_obj.text = item.get("text", info_obj.text)
-                    if "image" in item:
-                        info_obj.image = item["image"]
-                    info_obj.save()
-                else:
-                    # create new
-                    FarmInfo.objects.create(farm=instance, **{k: v for k, v in item.items() if k != "_delete"})
+        # If info_arr is passed, replace old with new
+        if info_data is not None:
+            instance.info_arr.all().delete()
+            for info in info_data:
+                FarmInfo.objects.create(farm=instance, **info)
 
         return instance
 
@@ -229,7 +283,7 @@ class ContactUsSerializer(serializers.ModelSerializer):
 class CoffeeJourneySerializer(serializers.ModelSerializer):
     class Meta:
         model = CoffeeJourney
-        fields = ["photo", "description"]
+        fields = ["title", "description"]
 
 
 class AboutSerializer(serializers.ModelSerializer):

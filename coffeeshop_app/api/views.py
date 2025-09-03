@@ -59,6 +59,7 @@ class BaristaVS(viewsets.ModelViewSet):
 class FarmVS(viewsets.ModelViewSet):
     queryset = Farm.objects.all()
     serializer_class = FarmSerializer
+    parser_classes = (MultiPartParser, FormParser)
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['region']
     search_fields = ['name']
