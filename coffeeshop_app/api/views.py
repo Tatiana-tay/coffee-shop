@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import generics, status
 # from rest_framework import mixins
 from rest_framework import viewsets, filters
+from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
 #import django_filters.rest_framework
 from coffeeshop_app.api.filters import PriceCategoryFilter
@@ -82,6 +83,7 @@ class ContactUsVS(viewsets.ModelViewSet):
 class AboutVS(viewsets.ModelViewSet):
     queryset = About.objects.all()
     serializer_class = AboutSerializer
+    parser_classes = (MultiPartParser, FormParser)
     
     def list(self, request, *args, **kwargs):
         return Response(status=405)  # Method Not Allowed

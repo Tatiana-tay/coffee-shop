@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from coffeeshop_app.models import (Item, Farm, FarmInfo, Barista, Review, FAQ,
                                    Gallery, Category, Size, Ingredient,
-                                   ContactUs, About, MailCollector, Nationality)
+                                   ContactUs, About, MailCollector, 
+                                   Nationality, CoffeeJourney)
 
 class ReviewSerializer(serializers.ModelSerializer):
     review_user = serializers.StringRelatedField(read_only=True)
@@ -30,20 +31,20 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class SimpleItemSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
     categories = CategorySerializer(many=True, read_only=True)
 
     class Meta:
         model = Item
         fields = ['id', 'name', 'price', 'image', 'avg_rating', 'categories']  # Just basic info
 
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+    # def get_image(self, obj):
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
 
 class ListItemSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
     reviews = ReviewSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
     sizes = SizeSerializer(many=True, read_only=True)
@@ -53,14 +54,14 @@ class ListItemSerializer(serializers.ModelSerializer):
         model = Item
         exclude = ['related_items']
 
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+    # def get_image(self, obj):
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
     reviews = ReviewSerializer(many=True, read_only=True)
     categories = CategorySerializer(many=True, read_only=True)
     sizes = SizeSerializer(many=True, read_only=True)
@@ -71,38 +72,38 @@ class ItemSerializer(serializers.ModelSerializer):
         model = Item
         fields = '__all__'
         
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+    # def get_image(self, obj):
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
 
 
 class FarmInfoSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False)        # used to find existing rows
     _delete = serializers.BooleanField(required=False)   # custom flag for deletes
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
 
     class Meta:
         model = FarmInfo
         fields = '__all__'
         
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+    # def get_image(self, obj):
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
     
 
 class FarmSerializer(serializers.ModelSerializer):
-    info_arr = FarmInfoSerializer(many=True, read_only=True)
-    image = serializers.SerializerMethodField()
+    info_arr = FarmInfoSerializer(many=True)
+    # image = serializers.SerializerMethodField()
     class Meta:
         model = Farm
         fields = '__all__'
         
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+    # def get_image(self, obj):
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
     
     
     def create(self, validated_data):
@@ -187,17 +188,17 @@ class NationalitySerializer(serializers.ModelSerializer):
 
 
 class BaristaSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
     nationalities = NationalitySerializer(many=True)
     
     class Meta:
         model = Barista
         fields = '__all__'
         
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+    # def get_image(self, obj):
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
 
 
 
@@ -208,15 +209,15 @@ class FAQSerializer(serializers.ModelSerializer):
 
 
 class GallerySerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
     class Meta:
         model = Gallery
         fields = '__all__'
         
-    def get_image(self, obj):
-        if obj.image:
-            return obj.image.url
-        return None
+    # def get_image(self, obj):
+    #     if obj.image:
+    #         return obj.image.url
+    #     return None
 
 
 class ContactUsSerializer(serializers.ModelSerializer):
@@ -225,10 +226,41 @@ class ContactUsSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
         
+class CoffeeJourneySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoffeeJourney
+        fields = ["photo", "description"]
+
+
 class AboutSerializer(serializers.ModelSerializer):
+    coffee_journey = CoffeeJourneySerializer(many=True)
+
     class Meta:
         model = About
-        fields = '__all__'
+        fields = ["our_story", "image", "coffee_journey"]
+
+    def create(self, validated_data):
+        journey_data = validated_data.pop("coffee_journey")
+        about = About.objects.create(**validated_data)
+        for journey in journey_data:
+            CoffeeJourney.objects.create(about=about, **journey)
+        return about
+
+    def update(self, instance, validated_data):
+        journey_data = validated_data.pop("coffee_journey", None)
+
+        # update About fields
+        instance.our_story = validated_data.get("our_story", instance.our_story)
+        instance.image = validated_data.get("image", instance.image)
+        instance.save()
+
+        if journey_data is not None:
+            # clear old journeys and replace with new
+            instance.coffee_journey.all().delete()
+            for journey in journey_data:
+                CoffeeJourney.objects.create(about=instance, **journey)
+
+        return instance
 
         
         

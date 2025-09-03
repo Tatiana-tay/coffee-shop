@@ -134,6 +134,7 @@ class ContactUs(models.Model):
     map_url = models.URLField(max_length=500, blank=True)
     title = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
+    location = models.CharField(max_length=255)
     
     def __str__(self):
         return self.name
@@ -142,7 +143,16 @@ class ContactUs(models.Model):
 class About(models.Model):
     our_story = models.CharField(max_length=255)
     image = models.ImageField(upload_to='about/')
-    coffee_journy = models.JSONField(default=list)
+    # coffee_journy = models.JSONField(default=list)
     
     def __str__(self):
         return self.our_story
+    
+    
+class CoffeeJourney(models.Model):
+    about = models.ForeignKey(About, related_name="coffee_journey", on_delete=models.CASCADE)
+    photo = models.ImageField(upload_to="coffee_journey/")
+    description = models.TextField()
+
+    def __str__(self):
+        return self.description[:50]
