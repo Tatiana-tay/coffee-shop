@@ -6,25 +6,25 @@ from django.contrib.auth.models import User
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=50)
     def __str__(self):
         return self.name
 
 
 class Size(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=50)
     def __str__(self):
         return self.name
     
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=50)
     def __str__(self):
         return self.name
 
 
 class Item(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=50)
     image = models.ImageField(upload_to='items/')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     avg_rating = models.FloatField(default=0)
@@ -42,12 +42,12 @@ class Item(models.Model):
     
     
 class Farm(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=100)
     image = models.ImageField(upload_to='farms/')
     area = models.FloatField()
     height = models.FloatField()
     temperature = models.FloatField()
-    region = models.CharField(max_length=255)
+    region = models.CharField(max_length=100)
     map_url = models.URLField(max_length=500, blank=True)
     ground_info_img = models.ImageField(upload_to='farms/ground/')
     description = models.TextField(blank=True)
@@ -67,25 +67,26 @@ class FarmInfo(models.Model):
     
     
 class Barista(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=100)
     image = models.ImageField(upload_to='baristas/')
     age = models.PositiveIntegerField(validators=[MinValueValidator(15)])
-    position = models.CharField(max_length=255)
+    position = models.CharField(max_length=50)
     experience_years = models.PositiveIntegerField()
-    # nationality = models.JSONField(default=list) 
+    nationality_code = models.CharField(max_length=10)
+    nationality_name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     
     def __str__(self):
         return self.name
     
 
-class Nationality(models.Model):
-    barista = models.ForeignKey(Barista, related_name="nationality", on_delete=models.CASCADE)
-    code = models.CharField(max_length=10)
-    name = models.CharField(max_length=100)
+# class Nationality(models.Model):
+#     barista = models.ForeignKey(Barista, related_name="nationality", on_delete=models.CASCADE)
+#     code = models.CharField(max_length=10)
+#     name = models.CharField(max_length=100)
 
-    def __str__(self):
-        return f"{self.name} ({self.code})"
+#     def __str__(self):
+#         return f"{self.name} ({self.code})"
 
     
 class Review(models.Model):

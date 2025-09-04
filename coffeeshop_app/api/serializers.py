@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from coffeeshop_app.models import (Item, Farm, FarmInfo, Barista, Review, FAQ,
                                    Gallery, Category, Size, Ingredient,
-                                   ContactUs, About, MailCollector, 
-                                   Nationality, CoffeeJourney)
+                                   ContactUs, About, MailCollector, CoffeeJourney)
 
 class ReviewSerializer(serializers.ModelSerializer):
     review_user = serializers.StringRelatedField(read_only=True)
@@ -218,45 +217,49 @@ class FarmSerializer(serializers.ModelSerializer):
 
 
 
-class NationalitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Nationality
-        fields = ["code", "name"]
+# class NationalitySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Nationality
+#         fields = ["code", "name"]
+
+# class BaristaSerializer(serializers.ModelSerializer):
+#     nationality = NationalitySerializer(many=True)
+
+#     class Meta:
+#         model = Barista
+#         fields = [
+#             "id", "name", "image", "age", "position", "experience_years",
+#             "description", "nationality",
+#         ]
+
+#     def create(self, validated_data):
+#         nationality_data = validated_data.pop("nationality", [])
+#         barista = Barista.objects.create(**validated_data)
+#         for nationality in nationality_data:
+#             Nationality.objects.create(barista=barista, **nationality)
+#         return barista
+
+#     def update(self, instance, validated_data):
+#         nationality_data = validated_data.pop("nationality", None)
+        
+#         # Update Barista instance
+#         for attr, value in validated_data.items():
+#             setattr(instance, attr, value)
+#         instance.save()
+
+#         # Update or replace Nationality instances
+#         if nationality_data is not None:
+#             instance.nationality.all().delete()
+#             for nationality in nationality_data:
+#                 Nationality.objects.create(barista=instance, **nationality)
+
+#         return instance
+
 
 class BaristaSerializer(serializers.ModelSerializer):
-    nationality = NationalitySerializer(many=True)
-
     class Meta:
         model = Barista
-        fields = [
-            "id", "name", "image", "age", "position", "experience_years",
-            "description", "nationality",
-        ]
-
-    def create(self, validated_data):
-        nationality_data = validated_data.pop("nationality", [])
-        barista = Barista.objects.create(**validated_data)
-        for nationality in nationality_data:
-            Nationality.objects.create(barista=barista, **nationality)
-        return barista
-
-    def update(self, instance, validated_data):
-        nationality_data = validated_data.pop("nationality", None)
-        
-        # Update Barista instance
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-
-        # Update or replace Nationality instances
-        if nationality_data is not None:
-            instance.nationality.all().delete()
-            for nationality in nationality_data:
-                Nationality.objects.create(barista=instance, **nationality)
-
-        return instance
-
-
+        fields = '__all__'
 
 class FAQSerializer(serializers.ModelSerializer):
     class Meta:

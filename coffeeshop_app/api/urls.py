@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from coffeeshop_app.api.views import (ItemVS, BaristaVS, FarmVS, FAQVS,
                                       ReviewCreate, ReviewList, ReviewDetail,
                                       ContactUsVS, AboutView, CategoryVS, SizeVS,
-                                      IngredientVS, MailCollectorVS, GalleryVS)
+                                      IngredientVS, MailCollectorVS, GalleryVS, TodaysPickView)
 
 
 router = DefaultRouter()
@@ -21,6 +21,7 @@ router.register('gallery', GalleryVS, basename='gallery-vs')
 urlpatterns = [
     path('', include(router.urls)),
     
+    path("todays-pick/", TodaysPickView.as_view(), name="todays-pick"),
     path('about/', AboutView.as_view(), name='about'),
     path('<int:pk>/review-create/', ReviewCreate.as_view(), name='review-create'),
     path('<int:pk>/reviews/', ReviewList.as_view(), name='review-list'),

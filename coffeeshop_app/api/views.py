@@ -109,12 +109,12 @@ class AboutView(APIView):
 
     def get(self, request):
         about_instance = self.get_object()
-        serializer = self.serializer_class(about_instance)
+        serializer = self.serializer_class(about_instance, context={"request": request})
         return Response(serializer.data)
 
     def put(self, request):
         about_instance = self.get_object()
-        serializer = self.serializer_class(about_instance, data=request.data)
+        serializer = self.serializer_class(about_instance, data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
@@ -123,7 +123,7 @@ class AboutView(APIView):
         if About.objects.exists():
             return Response({"message": "An About object already exists."}, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
