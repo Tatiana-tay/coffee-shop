@@ -9,15 +9,16 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ["id", "user_name", "email", "rate", "description", "created", "update", "item"]
         read_only_fields = ["id", "created", "update", "item"]
 
-    def get_fields(self):
-        fields = super().get_fields()
-
-        # Make email read-only if updating an existing review
-        if self.instance is not None:
-            fields["email"].read_only = True
-
-        return fields
+    
         
+        
+        
+class IdNameRelatedField(serializers.PrimaryKeyRelatedField):
+    """A field that accepts IDs for input, but returns {id, name} on output."""
+
+    def to_representation(self, value):
+        return {"id": value.id, "name": value.name}
+
         
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -67,11 +68,13 @@ class ListItemSerializer(serializers.ModelSerializer):
     #     return None
 
 
+
+
 class ItemSerializer(serializers.ModelSerializer):
     reviews = ReviewSerializer(many=True, read_only=True)
-    categories = CategorySerializer(many=True, read_only=True)
-    sizes = SizeSerializer(many=True, read_only=True)
-    ingredients = IngredientSerializer(many=True, read_only=True)
+    categories = IdNameRelatedField(queryset=Category.objects.all(), many=True)
+    sizes = IdNameRelatedField(queryset=Size.objects.all(), many=True)
+    ingredients = IdNameRelatedField(queryset=Ingredient.objects.all(), many=True)
     related_items = SimpleItemSerializer(many=True, read_only=True)
 
     class Meta:

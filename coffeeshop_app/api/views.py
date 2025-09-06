@@ -36,6 +36,7 @@ class ItemVS(viewsets.ModelViewSet):
         return ItemSerializer
     
 
+
 class CategoryVS(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

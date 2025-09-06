@@ -6,6 +6,7 @@ from coffeeshop_app.api.views import (ItemVS, BaristaVS, FarmVS, FAQVS,
                                       IngredientVS, MailCollectorVS, GalleryVS, TodaysPickView)
 
 
+
 router = DefaultRouter()
 router.register('item', ItemVS, basename='item-vs')
 router.register('category', CategoryVS, basename='category-vs')
@@ -17,6 +18,7 @@ router.register('faq', FAQVS, basename='faq-vs')
 router.register('contactus', ContactUsVS, basename='contactus-vs')
 router.register('mailcollector', MailCollectorVS, basename='mailcollector-vs')
 router.register('gallery', GalleryVS, basename='gallery-vs')
+
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -23,6 +23,7 @@ class Ingredient(models.Model):
         return self.name
 
 
+
 class Item(models.Model):
     name = models.CharField(max_length=50)
     image = models.ImageField(upload_to='items/')
