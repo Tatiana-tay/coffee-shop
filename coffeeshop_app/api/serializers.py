@@ -13,11 +13,28 @@ class ReviewSerializer(serializers.ModelSerializer):
         
         
         
-class IdNameRelatedField(serializers.PrimaryKeyRelatedField):
-    """A field that accepts IDs for input, but returns {id, name} on output."""
+
+class IdNameRelatedField(serializers.RelatedField):
+    """Accepts IDs on write, returns {id, name} on read."""
 
     def to_representation(self, value):
         return {"id": value.id, "name": value.name}
+
+    def to_internal_value(self, data):
+        try:
+            return self.queryset.get(pk=data)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError("Invalid ID value")
+        except self.queryset.model.DoesNotExist:
+            raise serializers.ValidationError("Object does not exist")
+
+    def get_choices(self, cutoff=None):
+        # Return a simple {id: str(value)} mapping for the Browsable API
+        return {
+            item.pk: str(item)
+            for item in self.queryset.all()
+        }
+
 
         
 class CategorySerializer(serializers.ModelSerializer):
@@ -71,7 +88,6 @@ class ListItemSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    reviews = ReviewSerializer(many=True, read_only=True)
     categories = IdNameRelatedField(queryset=Category.objects.all(), many=True)
     sizes = IdNameRelatedField(queryset=Size.objects.all(), many=True)
     ingredients = IdNameRelatedField(queryset=Ingredient.objects.all(), many=True)
@@ -95,6 +111,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "ingredients",
             "related_items",
         ]
+
 
         
     # def get_image(self, obj):

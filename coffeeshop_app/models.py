@@ -73,7 +73,7 @@ class Barista(models.Model):
     age = models.PositiveIntegerField(validators=[MinValueValidator(15)])
     position = models.CharField(max_length=50)
     experience_years = models.PositiveIntegerField()
-    nationality_code = models.CharField(max_length=10)
+    nationality_code = models.CharField(max_length=50)
     nationality_name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
     
