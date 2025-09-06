@@ -91,15 +91,21 @@ class Barista(models.Model):
     
 class Review(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="reviews")
-    review_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user_name = models.CharField(max_length=50)
     email = models.EmailField()
     rate = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
-    description = models.CharField(max_length=200, null=True)
+    description = models.CharField(max_length=200, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True)
     update = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["item", "email"], name="unique_review_per_email_item")
+        ]
+
     def __str__(self):
-        return str(self.rate) + " | " + self.item.name + " | " + str(self.review_user)
+        return f"{self.rate} | {self.item.name} | {self.email}"
+
     
     
 class FAQ(models.Model):
@@ -142,7 +148,7 @@ class ContactUs(models.Model):
 
 
 class About(models.Model):
-    our_story = models.CharField(max_length=255)
+    our_story = models.TextField()
     image = models.ImageField(upload_to='about/')
     # coffee_journy = models.JSONField(default=list)
     

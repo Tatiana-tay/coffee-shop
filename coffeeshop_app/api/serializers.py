@@ -4,11 +4,19 @@ from coffeeshop_app.models import (Item, Farm, FarmInfo, Barista, Review, FAQ,
                                    ContactUs, About, MailCollector, CoffeeJourney)
 
 class ReviewSerializer(serializers.ModelSerializer):
-    review_user = serializers.StringRelatedField(read_only=True)
-
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ["id", "user_name", "email", "rate", "description", "created", "update", "item"]
+        read_only_fields = ["id", "created", "update", "item"]
+
+    def get_fields(self):
+        fields = super().get_fields()
+
+        # Make email read-only if updating an existing review
+        if self.instance is not None:
+            fields["email"].read_only = True
+
+        return fields
         
         
 class CategorySerializer(serializers.ModelSerializer):
@@ -60,14 +68,12 @@ class ListItemSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    # image = serializers.SerializerMethodField()
     reviews = ReviewSerializer(many=True, read_only=True)
-    categories = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), many=True)
-    sizes = serializers.PrimaryKeyRelatedField(queryset=Size.objects.all(), many=True)
-    ingredients = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all(), many=True)
-    related_items = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all(), many=True, required=False)
+    categories = CategorySerializer(many=True, read_only=True)
+    sizes = SizeSerializer(many=True, read_only=True)
+    ingredients = IngredientSerializer(many=True, read_only=True)
+    related_items = SimpleItemSerializer(many=True, read_only=True)
 
-    
     class Meta:
         model = Item
         fields = [
@@ -86,6 +92,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "ingredients",
             "related_items",
         ]
+
         
     # def get_image(self, obj):
     #     if obj.image:
@@ -171,7 +178,6 @@ class FarmInfoSerializer(serializers.ModelSerializer):
 
 class FarmSerializer(serializers.ModelSerializer):
     info_arr = FarmInfoSerializer(many=True)  # nested input
-    # farm_info_list = FarmInfoSerializer(source="info_arr", many=True, read_only=True)  # output
 
     class Meta:
         model = Farm
@@ -186,8 +192,7 @@ class FarmSerializer(serializers.ModelSerializer):
             "map_url",
             "ground_info_img",
             "description",
-            "info_arr",         # for creating
-            # "farm_info_list",   # for reading
+            "info_arr",         
         ]
 
     def create(self, validated_data):

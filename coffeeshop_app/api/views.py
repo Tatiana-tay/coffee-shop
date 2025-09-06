@@ -147,6 +147,93 @@ class GalleryVS(viewsets.ModelViewSet):
     serializer_class = GallerySerializer
 
 
+# class ReviewList(generics.ListAPIView):
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_fields = ['review_user__username', 'rate']
+
+#     def get_queryset(self):
+#         pk = self.kwargs['pk']
+#         return Review.objects.filter(item=pk)
+
+
+# class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
+    
+     
+    
+
+# class ReviewCreate(generics.CreateAPIView):
+#     serializer_class = ReviewSerializer
+
+#     def get_queryset(self):
+#         return Review.objects.all()
+
+#     def perform_create(self, serializer):
+#         pk = self.kwargs.get("pk")
+#         item = Item.objects.get(pk=pk)
+
+#         email = serializer.validated_data["email"]  # take from request
+
+#         # ✅ Check if this email already reviewed this item
+#         if Review.objects.filter(item=item, email=email).exists():
+#             raise ValidationError("This email has already reviewed this item!")
+
+#         new_rating = serializer.validated_data["rate"]
+
+#         # Update item ratings
+#         item.total_rating += new_rating
+#         item.number_rating += 1
+#         item.avg_rating = item.total_rating / item.number_rating
+#         item.save()
+
+#         serializer.save(item=item)
+
+
+            
+            
+
+# class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
+
+#     def perform_update(self, serializer):
+#         instance = self.get_object()
+#         item = instance.item
+
+#         old_rating = instance.rate
+#         new_rating = serializer.validated_data.get("rate", old_rating)
+
+#         # Prevent email change
+#         if "email" in serializer.validated_data and serializer.validated_data["email"] != instance.email:
+#             raise ValidationError("You cannot change the email of a review.")
+
+#         # Update item rating correctly
+#         item.total_rating = item.total_rating - old_rating + new_rating
+#         item.avg_rating = item.total_rating / item.number_rating
+#         item.save()
+
+#         serializer.save()
+
+    # def perform_destroy(self, instance):
+    #     item = instance.item
+
+    #     # Adjust totals when deleting review
+    #     item.total_rating -= instance.rate
+    #     item.number_rating -= 1
+
+    #     if item.number_rating > 0:
+    #         item.avg_rating = item.total_rating / item.number_rating
+    #     else:
+    #         item.avg_rating = 0  # reset if no reviews left
+
+    #     item.save()
+    #     instance.delete()
+
+        
+        
 class ReviewCreate(generics.CreateAPIView):
     serializer_class = ReviewSerializer
 
@@ -154,46 +241,62 @@ class ReviewCreate(generics.CreateAPIView):
         return Review.objects.all()
 
     def perform_create(self, serializer):
-        pk = self.kwargs.get('pk')
+        pk = self.kwargs.get("pk")
         item = Item.objects.get(pk=pk)
 
-        #review_user = self.request.user
-        # review_queryset = Review.objects.filter(item=item, review_user=review_user)
+        email = serializer.validated_data["email"]
+        new_rating = serializer.validated_data["rate"]
 
-        # if review_queryset.exists():
-        #     raise ValidationError("You have already reviewed this movie!")
-        
-        review_user = self.request.user
-        new_rating = serializer.validated_data['rate']
+        # Check if this email already has a review for this item
+        try:
+            existing_review = Review.objects.get(item=item, email=email)
 
-        # Update total and count
-        item.total_rating += new_rating
-        item.number_rating += 1
+            # Adjust totals (subtract old, add new)
+            item.total_rating = item.total_rating - existing_review.rate + new_rating
+            item.avg_rating = item.total_rating / item.number_rating
+            item.save()
 
-        # Update avg_rating
-        item.avg_rating = item.total_rating / item.number_rating
+            # ✅ Update the existing review instead of creating a new one
+            existing_review.rate = new_rating
+            existing_review.description = serializer.validated_data.get("description", existing_review.description)
+            existing_review.save()
+
+        except Review.DoesNotExist:
+            # ✅ First time this email reviews this item → create new
+            item.total_rating += new_rating
+            item.number_rating += 1
+            item.avg_rating = item.total_rating / item.number_rating
+            item.save()
+
+            serializer.save(item=item)
+            
+            
+class ReviewDetail(generics.RetrieveDestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    def perform_destroy(self, instance):
+        item = instance.item
+
+        # Adjust totals
+        item.total_rating -= instance.rate
+        item.number_rating -= 1
+        item.avg_rating = item.total_rating / item.number_rating if item.number_rating > 0 else 0
         item.save()
 
-        serializer.save(item=item, review_user=review_user)
-
-
+        instance.delete()
+        
+        
+        
 class ReviewList(generics.ListAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['review_user__username', 'rate']
+    filterset_fields = ['email', 'rate']
 
     def get_queryset(self):
         pk = self.kwargs['pk']
         return Review.objects.filter(item=pk)
-
-
-class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
-    
-    
-    
     
     
 class TodaysPickView(APIView):
@@ -220,7 +323,7 @@ class TodaysPickView(APIView):
         except Category.DoesNotExist:
             return Response({"message": "Category not found."}, status=404)
 
-        # 3. Deterministically pick an item from this category
+        # 3. Deterministically pick 3 items from this category
         items = list(Item.objects.filter(categories=todays_category))
         if not items:
             return Response(
@@ -229,8 +332,12 @@ class TodaysPickView(APIView):
             )
 
         rng = random.Random(day_of_year + todays_category_id)  # stable per day
-        todays_pick = rng.choice(items)
+        rng.shuffle(items)  # shuffle deterministically
+        todays_picks = items[:3]  # take the first 3 (or fewer if not enough items)
 
         # 4. Serialize result
-        serializer = ItemSerializer(todays_pick, context={"request": request})
-        return Response(serializer.data)
+        serializer = ItemSerializer(todays_picks, many=True, context={"request": request})
+        return Response({
+            "category": todays_category.name,
+            "items": serializer.data
+        })
